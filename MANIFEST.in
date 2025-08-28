@@ -1,0 +1,42 @@
+# MANIFEST.in - パッケージに含めるファイルの指定
+
+# ドキュメント
+include README.md
+include LICENSE
+include requirements.txt
+include SETUP_GUIDE.md
+include CODE_REVIEW_REPORT.md
+include INSTALLER_EVALUATION.md
+
+# セットアップ関連
+include setup_windows.py
+include check_python.bat
+
+# セットアップディレクトリ
+recursive-include setup *.py
+recursive-include setup *.bat
+recursive-include setup *.md
+# JV-Link.exe と .reg ファイルは含めない（ユーザーが配置）
+recursive-exclude setup *.exe
+recursive-exclude setup *.reg
+
+# ドキュメント
+recursive-include docs *.md
+
+# テスト
+recursive-include tests *.py
+
+# 不要なファイルを除外
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude .DS_Store
+global-exclude *.log
+global-exclude *.db
+global-exclude *.db-journal
+
+# 開発用ファイルを除外
+exclude .gitignore
+exclude .git
+exclude install_windows.py
+exclude venv
+exclude .venv

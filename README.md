@@ -21,61 +21,93 @@ JRA-VAN DataLabから競馬データを簡単に取得・分析するためのPy
 - JRA-VAN DataLab契約（月額2,090円）
 - 管理者権限（初回セットアップ時のみ）
 
-## 🚀 クイックスタート
+## 🚀 インストール
 
-### 1. リポジトリをクローン
+### 📋 前提条件
+
+- Python 3.8以上 ([ダウンロード](https://www.python.org/downloads/))
+- Windows 10/11 (64bit)
+- JRA-VAN DataLab契約（月額2,090円）
+
+### 📥 ステップ1: リポジトリの取得
 
 ```bash
 git clone https://github.com/Mega-Gorilla/jra-van-client.git
 cd jra-van-client
 ```
 
-### 2. JV-Link.exeをダウンロード
+または、[GitHubからZIPダウンロード](https://github.com/Mega-Gorilla/jra-van-client/archive/refs/heads/main.zip)
 
-**重要：** JV-Link.exeはJRA-VAN公式サイトからダウンロードが必要です
+### 📦 ステップ2: Pythonパッケージのインストール
 
-1. [JRA-VAN SDKダウンロードページ](https://jra-van.jp/dlb/#tab5)にアクセス
-2. 最新版のSDKをダウンロード
-3. ZIPを解凍し、`JV-Link\JV-Link.exe`を`setup/`フォルダにコピー
-
-詳細手順は [setup/DOWNLOAD_JVLINK.md](setup/DOWNLOAD_JVLINK.md) を参照
-
-### 3. セットアップ実行（管理者権限必要）
-
-**管理者として**コマンドプロンプトを開いて：
+#### 方法A: 標準的なインストール（推奨）
 
 ```bash
-python install_windows.py
+# 仮想環境の作成（推奨）
+python -m venv venv
+venv\Scripts\activate  # Windows
+
+# パッケージのインストール
+pip install .
 ```
 
-これで全ての設定が自動的に完了します！
-
-### 4. 使用開始
+#### 方法B: 開発モード
 
 ```bash
-# 接続テスト
-.\venv\Scripts\python.exe main.py --test
+# 編集可能インストール（開発者向け）
+pip install -e .
+```
 
-# 初回データ取得（数時間かかります）
-.\venv\Scripts\python.exe main.py --setup
+#### 方法C: Anaconda使用
 
-# データ更新
-.\venv\Scripts\python.exe main.py --update
+```bash
+conda create -n jravan python=3.8
+conda activate jravan
+pip install .
+```
+
+### 📂 ステップ3: JV-Link.exeの配置
+
+1. [JRA-VAN公式サイト](https://jra-van.jp/dlb/#tab5)からSDKをダウンロード
+2. ZIPを解凍し、`JV-Link.exe`を`setup/`フォルダにコピー
+
+詳細: [setup/DOWNLOAD_JVLINK.md](setup/DOWNLOAD_JVLINK.md)
+
+### ⚙️ ステップ4: Windows固有設定（管理者権限推奨）
+
+```bash
+python setup_windows.py
+```
+
+### ✅ ステップ5: 動作確認
+
+```bash
+# インストール後はjravanコマンドが使用可能
+jravan --test
+
+# または直接実行
+python -m jravan --test
 ```
 
 ## 💻 基本的な使い方
 
-### コマンドライン
+### コマンドライン（pip install後）
 
 ```bash
-# データ更新（毎週実行推奨）
-.\venv\Scripts\python.exe main.py --update
+# 接続テスト
+jravan --test
 
-# リアルタイムデータ取得（レース当日）
-.\venv\Scripts\python.exe main.py --realtime
+# 初回データ取得（セットアップ）
+jravan --setup
+
+# データ更新（毎週実行推奨）
+jravan --update
 
 # 統計情報表示
-.\venv\Scripts\python.exe main.py --stats
+jravan --stats
+
+# ヘルプ
+jravan --help
 ```
 
 ### Python API（推奨：コンテキストマネージャー使用）

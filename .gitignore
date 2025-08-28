@@ -75,11 +75,13 @@ JRA-VAN Data Lab. SDK Ver4.9.0.2/
 JV-Link.exe
 setup/JV-Link.exe
 setup/jvlink_localserver.reg  # 個人のパスが含まれるため除外
+setup/test_jvlink.py  # 自動生成される一時ファイル
 setup/nul
 
 # Test files (temporary)
 test_*.py
 setup_jvlink.py
+install_windows_old.py
 
 # Windows
 Thumbs.db

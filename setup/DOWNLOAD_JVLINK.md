@@ -87,14 +87,36 @@ else:
 
 ## 🚀 次のステップ
 
-JV-Link.exeの配置が完了したら、プロジェクトルートに戻って以下を実行：
+JV-Link.exeの配置が完了したら：
 
+### 1. プロジェクトルートに戻る
 ```bash
-# プロジェクトルートに戻る
 cd ..
+```
 
-# インストーラーを実行（管理者権限で）
-python install_windows.py
+### 2. Pythonパッケージのインストール（未実行の場合）
+```bash
+# 仮想環境作成（推奨）
+python -m venv venv
+venv\Scripts\activate
+
+# パッケージインストール
+pip install .
+```
+
+### 3. Windows固有設定の実行
+```bash
+# COM登録とレジストリ設定（管理者権限推奨）
+python setup_windows.py
+```
+
+### 4. 動作確認
+```bash
+# 接続テスト
+jravan --test
+
+# または
+python -m jravan --test
 ```
 
 詳細は [README.md](../README.md) を参照してください。
