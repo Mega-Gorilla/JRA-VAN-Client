@@ -8,9 +8,10 @@ Based on JRA-VAN SDK Ver4.9.0.2
 import sqlite3
 import time
 import os
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Iterator
 from datetime import datetime, timedelta
 import logging
+from contextlib import contextmanager, closing
 
 from .client import JVLinkClient
 from .parser import RecordParser, CodeMaster
@@ -34,6 +35,7 @@ class JVDataManager:
         self.save_path = save_path
         self.jvlink = JVLinkClient()
         self.conn = None
+        self._connection_pool_size = 5  # パフォーマンス向上のため
         
         # ディレクトリ作成
         if not os.path.exists(save_path):
@@ -44,8 +46,8 @@ class JVDataManager:
     
     def setup_database(self):
         """データベース初期設定"""
-        self.conn = sqlite3.connect(self.db_path)
-        cursor = self.conn.cursor()
+        with self.get_db_connection() as conn:
+            cursor = conn.cursor()
         
         # レーステーブル
         cursor.execute("""
@@ -212,17 +214,57 @@ class JVDataManager:
             )
         """)
         
-        # インデックス作成
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_race_date ON races(year, monthday)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_race_jyo ON races(jyo_code)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_ketto ON results(ketto_num)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_jockey ON results(jockey_code)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_trainer ON results(trainer_code)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_horse_father ON horses(father)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_horse_mother ON horses(mother)")
+            # インデックス作成
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_race_date ON races(year, monthday)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_race_jyo ON races(jyo_code)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_ketto ON results(ketto_num)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_jockey ON results(jockey_code)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_trainer ON results(trainer_code)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_horse_father ON horses(father)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_horse_mother ON horses(mother)")
+            
+            conn.commit()
+            logger.info("データベース初期化完了")
+    
+    def __enter__(self):
+        """コンテキストマネージャー: エントリー"""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """コンテキストマネージャー: 終了処理"""
+        self.close()
+        return False
+    
+    @contextmanager
+    def get_db_connection(self) -> Iterator[sqlite3.Connection]:
+        """
+        データベース接続のコンテキストマネージャー
         
-        self.conn.commit()
-        logger.info("データベース初期化完了")
+        Yields:
+            sqlite3.Connection: データベース接続
+        """
+        conn = None
+        try:
+            conn = sqlite3.connect(
+                self.db_path, 
+                timeout=30.0,  # タイムアウト設定
+                check_same_thread=False  # スレッドセーフ
+            )
+            # パフォーマンス改善のための設定
+            conn.execute('PRAGMA journal_mode=WAL')  # Write-Ahead Logging
+            conn.execute('PRAGMA synchronous=NORMAL')  # 同期モード調整
+            conn.execute('PRAGMA cache_size=10000')  # キャッシュサイズ増加
+            conn.execute('PRAGMA temp_store=memory')  # 一時ファイルをメモリに保存
+            conn.row_factory = sqlite3.Row  # 行を辞書風にアクセス可能に
+            yield conn
+        except sqlite3.Error as e:
+            logger.error(f"データベースエラー: {e}")
+            if conn:
+                conn.rollback()
+            raise
+        finally:
+            if conn:
+                conn.close()
     
     def initialize_jvlink(self, sid: str = "UNKNOWN") -> bool:
         """
@@ -402,12 +444,13 @@ class JVDataManager:
         finally:
             self.jvlink.close()
     
-    def process_data(self, max_records: int = 10000) -> tuple:
+    def process_data(self, max_records: int = 10000, batch_size: int = 100) -> tuple:
         """
-        データ読み込みと処理
+        データ読み込みと処理（バッチ処理対応）
         
         Args:
             max_records: 最大処理レコード数
+            batch_size: バッチサイズ（パフォーマンス向上）
             
         Returns:
             (処理件数, エラー件数)のタプル
@@ -417,6 +460,7 @@ class JVDataManager:
         file_count = 0
         last_filename = ""
         download_wait_count = 0
+        batch_records = []  # バッチ処理用のレコード配列
         
         while processed < max_records:
             # データ読み込み
@@ -429,14 +473,17 @@ class JVDataManager:
                     record = RecordParser.parse(data)
                     
                     if record:
-                        # データベース保存
-                        self.save_record(record)
+                        batch_records.append(record)
                         processed += 1
+                        
+                        # バッチサイズに達したらまとめて保存
+                        if len(batch_records) >= batch_size:
+                            self._save_batch_records(batch_records)
+                            batch_records = []
                         
                         # 進捗表示
                         if processed % 100 == 0:
                             logger.info(f"処理済: {processed}/{max_records}")
-                            self.conn.commit()  # 定期的にコミット
                             
                 except Exception as e:
                     logger.error(f"レコード処理エラー: {e}")
@@ -470,19 +517,71 @@ class JVDataManager:
                     logger.error("エラーが多いため処理を中断")
                     break
         
-        # 最終コミット
-        self.conn.commit()
+        # 残りのレコードを処理
+        if batch_records:
+            self._save_batch_records(batch_records)
         
         return (processed, errors)
     
-    def save_record(self, record: Dict[str, Any]):
+    def _save_batch_records(self, records: List[Dict[str, Any]]) -> None:
+        """
+        レコードをバッチでデータベースに保存（パフォーマンス向上）
+        
+        Args:
+            records: 保存対象のレコード配列
+        """
+        if not records:
+            return
+            
+        try:
+            with self.get_db_connection() as conn:
+                # トランザクション開始
+                conn.execute('BEGIN')
+                
+                try:
+                    for record in records:
+                        self.save_record(record, conn)
+                    
+                    # バッチ全体をコミット
+                    conn.commit()
+                    
+                except Exception as e:
+                    # エラー時はロールバック
+                    conn.rollback()
+                    logger.error(f"バッチ保存エラー: {e}")
+                    raise
+                    
+        except Exception as e:
+            logger.error(f"バッチ処理中にエラーが発生: {e}")
+            # 個別保存にフォールバック
+            self._save_records_individually(records)
+    
+    def _save_records_individually(self, records: List[Dict[str, Any]]) -> None:
+        """
+        レコードを個別に保存（フォールバック処理）
+        
+        Args:
+            records: 保存対象のレコード配列
+        """
+        logger.info("個別保存モードにフォールバック")
+        
+        for record in records:
+            try:
+                with self.get_db_connection() as conn:
+                    self.save_record(record, conn)
+                    conn.commit()
+            except Exception as e:
+                logger.error(f"個別保存エラー: {e}")
+    
+    def save_record(self, record: Dict[str, Any], conn: sqlite3.Connection):
         """
         レコードをデータベースに保存
         
         Args:
             record: 解析済みレコード
+            conn: データベース接続
         """
-        cursor = self.conn.cursor()
+        cursor = conn.cursor()
         record_type = record.get('record_type')
         
         try:
@@ -504,7 +603,7 @@ class JVDataManager:
             logger.error(f"レコード保存エラー ({record_type}): {e}")
             raise
     
-    def save_race_record(self, cursor, record):
+    def save_race_record(self, cursor: sqlite3.Cursor, record: Dict[str, Any]) -> None:
         """RAレコード保存"""
         race_key = self.build_race_key(record['race_key'])
         
@@ -546,7 +645,7 @@ class JVDataManager:
             record['data_kubun']
         ))
     
-    def save_result_record(self, cursor, record):
+    def save_result_record(self, cursor: sqlite3.Cursor, record: Dict[str, Any]) -> None:
         """SEレコード保存"""
         race_key = self.build_race_key(record['race_key'])
         
@@ -589,7 +688,7 @@ class JVDataManager:
             record['data_kubun']
         ))
     
-    def save_horse_record(self, cursor, record):
+    def save_horse_record(self, cursor: sqlite3.Cursor, record: Dict[str, Any]) -> None:
         """UMレコード保存"""
         cursor.execute("""
             INSERT OR REPLACE INTO horses (
@@ -625,7 +724,7 @@ class JVDataManager:
             record['data_kubun']
         ))
     
-    def save_odds_record(self, cursor, record):
+    def save_odds_record(self, cursor: sqlite3.Cursor, record: Dict[str, Any]) -> None:
         """O1レコード（オッズ）保存"""
         race_key = self.build_race_key(record['race_key'])
         
@@ -648,7 +747,7 @@ class JVDataManager:
                 record['data_kubun']
             ))
     
-    def save_weight_record(self, cursor, record):
+    def save_weight_record(self, cursor: sqlite3.Cursor, record: Dict[str, Any]) -> None:
         """WFレコード（馬体重）保存"""
         race_key = self.build_race_key(record['race_key'])
         
@@ -668,7 +767,7 @@ class JVDataManager:
                 record['data_kubun']
             ))
     
-    def save_schedule_record(self, cursor, record):
+    def save_schedule_record(self, cursor: sqlite3.Cursor, record: Dict[str, Any]) -> None:
         """YSレコード（年間スケジュール）保存"""
         for kaisai in record.get('kaisai_info', []):
             cursor.execute("""
@@ -699,7 +798,8 @@ class JVDataManager:
     
     def get_last_update_time(self) -> str:
         """最終更新日時取得"""
-        cursor = self.conn.cursor()
+        with self.get_db_connection() as conn:
+            cursor = conn.cursor()
         
         # 処理履歴から最終成功日時を取得
         cursor.execute("""
@@ -714,71 +814,87 @@ class JVDataManager:
         if result and result[0]:
             return result[0]
         
-        # なければレーステーブルから取得
-        cursor.execute("""
-            SELECT MAX(year || monthday || '000000') 
-            FROM races
-        """)
-        
-        result = cursor.fetchone()
-        if result and result[0]:
-            return result[0]
-        
-        # デフォルトは1年前
-        one_year_ago = datetime.now() - timedelta(days=365)
-        return one_year_ago.strftime("%Y%m%d000000")
+            # なければレーステーブルから取得
+            cursor.execute("""
+                SELECT MAX(year || monthday || '000000') 
+                FROM races
+            """)
+            
+            result = cursor.fetchone()
+            if result and result[0]:
+                return result[0]
+            
+            # デフォルトは1年前
+            one_year_ago = datetime.now() - timedelta(days=365)
+            return one_year_ago.strftime("%Y%m%d000000")
     
     def start_process_history(self, process_type: str, data_spec: str, from_time: str) -> int:
         """処理履歴開始記録"""
-        cursor = self.conn.cursor()
-        cursor.execute("""
-            INSERT INTO process_history (
-                process_type, data_spec, from_time, 
-                status, started_at
-            ) VALUES (?, ?, ?, 'RUNNING', CURRENT_TIMESTAMP)
-        """, (process_type, data_spec, from_time))
-        self.conn.commit()
-        return cursor.lastrowid
+        with self.get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO process_history (
+                    process_type, data_spec, from_time, 
+                    status, started_at
+                ) VALUES (?, ?, ?, 'RUNNING', CURRENT_TIMESTAMP)
+            """, (process_type, data_spec, from_time))
+            conn.commit()
+            return cursor.lastrowid
     
     def finish_process_history(self, process_id: int, status: str, 
-                              processed: int, errors: int):
+                              processed: int, errors: int) -> None:
         """処理履歴終了記録"""
-        cursor = self.conn.cursor()
-        cursor.execute("""
-            UPDATE process_history 
-            SET status = ?, 
-                processed_count = ?, 
-                error_count = ?,
-                to_time = CURRENT_TIMESTAMP,
-                finished_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        """, (status, processed, errors, process_id))
-        self.conn.commit()
+        with self.get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE process_history 
+                SET status = ?, 
+                    processed_count = ?, 
+                    error_count = ?,
+                    to_time = CURRENT_TIMESTAMP,
+                    finished_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (status, processed, errors, process_id))
+            conn.commit()
     
     def close(self):
         """終了処理"""
-        if self.conn:
-            self.conn.close()
+        # 旧式のコネクションがあれば閉じる
+        if hasattr(self, 'conn') and self.conn:
+            try:
+                self.conn.close()
+            except sqlite3.Error as e:
+                logger.warning(f"データベース接続終了時エラー: {e}")
+            finally:
+                self.conn = None
+        
+        # JV-Link終了
         if self.jvlink:
-            self.jvlink.close()
+            try:
+                self.jvlink.close()
+            except Exception as e:
+                logger.warning(f"JV-Link終了時エラー: {e}")
+    
+    def __del__(self):
+        """デストラクタ"""
+        self.close()
 
 
 def test_manager():
-    """マネージャーのテスト"""
+    """マネージャーのテスト（コンテキストマネージャー使用）"""
     print("JV-Data Managerテスト")
     print("=" * 50)
     
-    manager = JVDataManager("test.db", "test_data")
-    
-    # 年間スケジュール取得（軽量データ）
-    success = manager.download_setup_data("YSCH")
-    
-    if success:
-        print("テスト成功")
-    else:
-        print("テスト失敗")
-    
-    manager.close()
+    # コンテキストマネージャーを使用して自動的にリソースクリーンアップ
+    with JVDataManager("test.db", "test_data") as manager:
+        # 年間スケジュール取得（軽量データ）
+        success = manager.download_setup_data("YSCH")
+        
+        if success:
+            print("テスト成功")
+        else:
+            print("テスト失敗")
+    # ここで自動的にmanager.close()が呼ばれる
     
     print("=" * 50)
     print("テスト完了")

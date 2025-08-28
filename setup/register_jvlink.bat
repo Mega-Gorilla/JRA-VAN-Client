@@ -1,30 +1,27 @@
 @echo off
-echo ======================================================================
-echo JV-Link.exe 登録バッチ
-echo ======================================================================
-echo.
-echo このバッチは管理者権限で実行してください
+echo ========================================
+echo JV-Link.exe Registration
+echo ========================================
 echo.
 
 cd /d "%~dp0"
-echo 現在のディレクトリ: %CD%
 
-echo JV-Link.exeを登録中...
-if exist JV-Link.exe (
-    JV-Link.exe /regserver
-) else (
-    echo エラー: JV-Link.exeが見つかりません
-    echo setupフォルダに JV-Link.exe をコピーしてください
+if not exist "JV-Link.exe" (
+    echo ERROR: JV-Link.exe not found in this directory
+    echo.
+    pause
     exit /b 1
 )
 
+echo Registering JV-Link.exe...
+JV-Link.exe /regserver
+
 if %errorlevel% == 0 (
     echo.
-    echo 登録成功！
+    echo SUCCESS: JV-Link.exe registered successfully!
 ) else (
     echo.
-    echo 登録失敗（エラーコード: %errorlevel%）
-    echo 管理者権限で実行してください
+    echo ERROR: Registration failed. Please run as Administrator.
 )
 
 echo.

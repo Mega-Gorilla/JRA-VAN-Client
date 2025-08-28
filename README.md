@@ -78,17 +78,17 @@ python install_windows.py
 .\venv\Scripts\python.exe main.py --stats
 ```
 
-### Python API
+### Python API（推奨：コンテキストマネージャー使用）
 
 ```python
 from jravan.manager import JVDataManager
 
-# データマネージャー初期化
-manager = JVDataManager("jravan.db")
-
-# レースデータ取得
-manager.download_setup_data("RACE")  # 初回
-manager.update_data()                # 更新
+# コンテキストマネージャーで安全にリソース管理
+with JVDataManager("jravan.db") as manager:
+    # レースデータ取得
+    manager.download_setup_data("RACE")  # 初回
+    manager.update_data()                # 更新
+# 自動的にリソースがクリーンアップされる
 
 # SQLiteデータベースから分析
 import sqlite3
@@ -97,11 +97,10 @@ import pandas as pd
 conn = sqlite3.connect("jravan.db")
 df = pd.read_sql_query("""
     SELECT * FROM races 
-    WHERE year = '2024' 
+    WHERE year = '2025' 
     AND jyo_name LIKE '%東京%'
 """, conn)
-
-manager.close()
+conn.close()
 ```
 
 ## 📊 取得可能なデータ
@@ -193,12 +192,25 @@ A: はい、月額2,090円の契約が必要です。[JRA-VAN公式サイト](ht
 **Q: Mac/Linuxで使える？**  
 A: 申し訳ございません。JV-LinkがWindows専用のため対応していません。
 
+## 🆕 最新の改善内容 (2025年8月)
+
+### パフォーマンス最適化
+- **バッチ処理実装**: 大量データ処理時のメモリ効率を改善
+- **WALモード対応**: SQLiteのWrite-Ahead Loggingで並列処理性能向上
+- **接続プール実装**: データベース接続の効率的な管理
+
+### 安全性向上
+- **コンテキストマネージャー実装**: リソースの自動クリーンアップ
+- **具体的な例外処理**: エラー原因の特定が容易に
+- **トランザクション管理強化**: データ整合性の保証
+
 ## 📈 今後の予定
 
 - [ ] Web API化
 - [ ] 機械学習モデルの統合
 - [ ] レース予測機能
 - [ ] データ可視化ツール
+- [ ] Docker対応
 
 ## 🤝 コントリビューション
 

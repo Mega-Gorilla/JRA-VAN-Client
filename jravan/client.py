@@ -107,11 +107,11 @@ class JVLinkClient:
         -504: "スタートキットダウンロードエラー",
     }
     
-    def __init__(self):
+    def __init__(self) -> None:
         """コンストラクタ"""
-        self.jvlink = None
-        self.is_initialized = False
-        self.is_open = False
+        self.jvlink: Optional[Any] = None
+        self.is_initialized: bool = False
+        self.is_open: bool = False
         
     def initialize(self, sid: str = "UNKNOWN") -> int:
         """
@@ -152,7 +152,8 @@ class JVLinkClient:
         if self.jvlink:
             try:
                 return self.jvlink.m_JVLinkVersion
-            except:
+            except (AttributeError, OSError, Exception) as e:
+                logger.warning(f"JV-Linkバージョン取得エラー: {e}")
                 return "Unknown"
         return ""
     
@@ -351,7 +352,7 @@ class JVLinkClient:
             return self.jvlink.JVStatus()
         return -1
     
-    def cancel(self):
+    def cancel(self) -> None:
         """ダウンロードキャンセル"""
         if self.jvlink:
             logger.info("ダウンロードキャンセル")
@@ -387,13 +388,13 @@ class JVLinkClient:
             return self.jvlink.JVFileDelete(filename)
         return -1
     
-    def __del__(self):
+    def __del__(self) -> None:
         """デストラクタ"""
         if self.is_open:
             self.close()
             
 
-def test_connection():
+def test_connection() -> bool:
     """接続テスト"""
     print("JRA-VAN DataLab接続テスト開始")
     print("=" * 50)
