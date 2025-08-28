@@ -18,8 +18,10 @@ print(f"Platform: {sys.platform}")
 print(f"64bit: {sys.maxsize > 2**32}")
 
 # JV-Link.exe の存在確認
-jvlink_path = r"D:\Codes\StableFormer\JRA-VAN Data Lab. SDK Ver4.9.0.2\JV-Link\JV-Link.exe"
+jvlink_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "setup", "JV-Link.exe")
 print(f"\nJV-Link.exe存在確認: {os.path.exists(jvlink_path)}")
+if os.path.exists(jvlink_path):
+    print(f"  パス: {jvlink_path}")
 
 # レジストリ確認
 print("\nレジストリ確認:")

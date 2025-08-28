@@ -72,6 +72,9 @@ jravan.log
 
 # JRA-VAN SDK (proprietary files - should not be shared)
 JRA-VAN Data Lab. SDK Ver4.9.0.2/
+JV-Link.exe
+setup/JV-Link.exe
+setup/jvlink_localserver.reg  # 個人のパスが含まれるため除外
 
 # Windows
 Thumbs.db

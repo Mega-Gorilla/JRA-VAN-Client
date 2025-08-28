@@ -1,227 +1,221 @@
-# jra-van-client
-
-JRA-VAN DataLabから競馬データを円滑に取得するためのPythonパッケージ
+# JRA-VAN Client
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org)
+[![Windows](https://img.shields.io/badge/platform-Windows%2064bit-lightgrey)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)](https://www.microsoft.com/windows)
 
-## 📌 概要
-
-`jra-van-client`は、JRA-VAN DataLabのJV-Link APIをPythonから簡単に利用できるようにするラッパーパッケージです。複雑なCOM操作を隠蔽し、Pythonらしいインターフェースで競馬データの取得・管理を実現します。
+JRA-VAN DataLabから競馬データを簡単に取得・分析するためのPythonクライアント
 
 ## ✨ 特徴
 
-- 🚀 **簡単なセットアップ** - 数コマンドでインストール完了
-- 🐍 **Pythonic API** - Python開発者に優しいインターフェース
-- 📊 **自動データ管理** - SQLiteによる自動データベース構築
-- 🔄 **差分更新対応** - 効率的なデータ更新
-- ⚡ **リアルタイムデータ** - オッズ・馬体重等の速報データ対応
-- 🛠️ **64bit Python対応** - 32bit/64bit両対応
+- 🚀 **ワンクリックセットアップ** - 管理者権限で`install_windows.py`を実行するだけ
+- 💻 **64bit完全対応** - 最新のPython環境で動作
+- 🐍 **Pythonic API** - シンプルで使いやすいインターフェース
+- 📊 **自動データベース構築** - SQLiteで簡単にデータ管理
+- ⚡ **リアルタイムデータ対応** - オッズ・馬体重の速報取得
 
-## 📋 必要条件
+## 📋 必要要件
 
-- Windows OS (Windows 10/11)
+- Windows 10/11 (64bit)
 - Python 3.8以上
 - JRA-VAN DataLab契約（月額2,090円）
-- JRA-VAN SDK Ver4.9.0.2
+- 管理者権限（初回セットアップ時のみ）
 
-## 🚀 インストール
+## 🚀 クイックスタート
 
-### 1. パッケージのインストール
+### 1. リポジトリをクローン
 
 ```bash
-# リポジトリをクローン
 git clone https://github.com/Mega-Gorilla/jra-van-client.git
 cd jra-van-client
-
-# 仮想環境作成
-python -m venv venv
-venv\Scripts\activate  # Windows
-
-# 依存パッケージインストール
-pip install -r requirements.txt
 ```
 
-### 2. JV-Link登録（初回のみ・管理者権限必要）
+### 2. JV-Link.exeをダウンロード
+
+**重要：** JV-Link.exeはJRA-VAN公式サイトからダウンロードが必要です
+
+1. [JRA-VAN SDKダウンロードページ](https://jra-van.jp/dlb/#tab5)にアクセス
+2. 最新版のSDKをダウンロード
+3. ZIPを解凍し、`JV-Link\JV-Link.exe`を`setup/`フォルダにコピー
+
+詳細手順は [setup/DOWNLOAD_JVLINK.md](setup/DOWNLOAD_JVLINK.md) を参照
+
+### 3. セットアップ実行（管理者権限必要）
+
+**管理者として**コマンドプロンプトを開いて：
 
 ```bash
-# 管理者権限でコマンドプロンプトを開く
-cd setup
-register_jvlink.bat
+python install_windows.py
 ```
 
-### 3. 64bit Python対応設定（64bit版Pythonの場合）
+これで全ての設定が自動的に完了します！
+
+### 4. 使用開始
 
 ```bash
-# 管理者権限で実行
-python setup\setup_64bit_support.py
+# 接続テスト
+.\venv\Scripts\python.exe main.py --test
+
+# 初回データ取得（数時間かかります）
+.\venv\Scripts\python.exe main.py --setup
+
+# データ更新
+.\venv\Scripts\python.exe main.py --update
 ```
 
-## 💻 使い方
+## 💻 基本的な使い方
 
 ### コマンドライン
 
 ```bash
-# 接続テスト
-python main_jra_van.py --test
+# データ更新（毎週実行推奨）
+.\venv\Scripts\python.exe main.py --update
 
-# 初回データ取得（セットアップ）
-python main_jra_van.py --setup
-
-# データ更新
-python main_jra_van.py --update
-
-# リアルタイムデータ取得
-python main_jra_van.py --realtime
+# リアルタイムデータ取得（レース当日）
+.\venv\Scripts\python.exe main.py --realtime
 
 # 統計情報表示
-python main_jra_van.py --stats
+.\venv\Scripts\python.exe main.py --stats
 ```
 
 ### Python API
 
 ```python
-from src.jvdata_manager import JVDataManager
-from src.jvlink_client import JVLinkClient
+from jravan.manager import JVDataManager
 
-# 基本的な使い方
+# データマネージャー初期化
 manager = JVDataManager("jravan.db")
 
 # レースデータ取得
 manager.download_setup_data("RACE")  # 初回
-manager.update_data()  # 更新
+manager.update_data()                # 更新
 
-# リアルタイムデータ
-manager.get_realtime_data(
-    JVLinkClient.REALTIME_SPEC['WEIGHT'],  # 馬体重
-    race_key=""  # 空文字で当日全レース
-)
-
-# データベースから取得
+# SQLiteデータベースから分析
 import sqlite3
+import pandas as pd
+
 conn = sqlite3.connect("jravan.db")
-df = pd.read_sql_query("SELECT * FROM races WHERE year='2024'", conn)
+df = pd.read_sql_query("""
+    SELECT * FROM races 
+    WHERE year = '2024' 
+    AND jyo_name LIKE '%東京%'
+""", conn)
 
 manager.close()
 ```
 
-### 利用可能なデータ種別
+## 📊 取得可能なデータ
 
-#### 蓄積系データ
-- `RACE` - レース情報
-- `DIFF` - 差分データ
-- `BLOD` - 血統データ
-- `HOSE` - 競走馬データ
-- `YSCH` - 年間スケジュール
+### 基本データ
+- 📅 **レース情報** - 開催日、距離、馬場状態など
+- 🏇 **出走馬情報** - 馬名、騎手、調教師、過去成績
+- 🧬 **血統データ** - 父馬、母馬、母父馬
+- 📈 **年間スケジュール** - 開催予定、重賞レース日程
 
-#### リアルタイムデータ
-- `0B15` - 馬体重
-- `0B12` - 単複枠オッズ
-- `0B13` - 馬連オッズ
-- `0B20` - 速報成績
+### リアルタイムデータ
+- 💰 **オッズ** - 単勝、複勝、馬連、3連単など
+- ⚖️ **馬体重** - 当日計量結果
+- 🏁 **速報結果** - 確定順位、タイム
 
-## 📊 データベース構造
-
-自動的に以下のテーブルが作成されます：
-
-| テーブル名 | 説明 | 主要カラム |
-|-----------|------|-----------|
-| races | レース情報 | race_key, race_name, race_date, distance |
-| results | 出走結果 | race_key, umaban, kakutei_jyuni, time |
-| horses | 競走馬マスタ | ketto_num, bamei, father, mother |
-| odds | オッズ | race_key, umaban, tansho_odds |
-| weights | 馬体重 | race_key, umaban, bataijyu, zogen |
-| schedules | 開催日程 | year, kaiji_date, jyo_code |
-
-## 🛠️ トラブルシューティング
-
-### エラー: クラスが登録されていません
-
-```bash
-# 管理者権限で実行
-cd setup
-register_jvlink.bat
-```
-
-### エラー: サービスキー認証エラー (-211)
-
-JRA-VAN DataLabの契約が必要です。[JRA-VAN公式サイト](https://jra-van.jp/)から契約してください。
-
-### 64bit/32bit互換性問題
-
-```bash
-# オプション1: 32bit Pythonを使用
-py -3.8-32 -m venv venv32
-
-# オプション2: 64bit対応設定（管理者権限）
-python setup\setup_64bit_support.py
-```
-
-## 📁 プロジェクト構造
+## 📁 プロジェクト構成
 
 ```
 jra-van-client/
-├── src/                    # ソースコード
-│   ├── __init__.py
-│   ├── jvlink_client.py   # JV-Link COMラッパー
-│   ├── jvdata_parser.py   # データパーサー
-│   └── jvdata_manager.py  # データ管理
-├── setup/                  # セットアップツール
-│   ├── register_jvlink.bat
-│   └── setup_64bit_support.py
-├── tests/                  # テストコード
-│   └── test_jvlink.py
-├── docs/                   # ドキュメント
-├── main_jra_van.py        # CLI
-├── requirements.txt       # 依存関係
-└── README.md             # このファイル
+├── install_windows.py      # Windows用インストーラー
+├── main.py                 # メインプログラム
+├── pyproject.toml          # Pythonパッケージ設定
+├── jravan/
+│   ├── client.py          # JV-Link COMラッパー
+│   ├── manager.py         # データ管理
+│   └── parser.py          # データ解析
+├── setup/
+│   ├── DOWNLOAD_JVLINK.md # JV-Link.exeダウンロード手順
+│   ├── create_registry.py  # レジストリ自動生成スクリプト
+│   ├── apply_registry.bat  # レジストリ適用バッチ
+│   └── register_jvlink.bat # JV-Link登録バッチ
+└── docs/                   # 詳細ドキュメント
 ```
 
-## 🔧 開発者向け
+## 🎯 活用例
 
-### テスト実行
-
-```bash
-python tests/test_jvlink.py
-pytest tests/  # pytestを使う場合
+### 1. 過去レースの分析
+```python
+# 重賞レースの結果を取得
+df_grade = pd.read_sql_query("""
+    SELECT * FROM races 
+    WHERE grade_cd IN ('1', '2', '3')  -- G1, G2, G3
+    ORDER BY year DESC, monthday DESC
+""", conn)
 ```
 
-### パッケージとしてインストール
-
-```bash
-pip install -e .  # 開発モード
+### 2. 騎手成績の集計
+```python
+# 騎手別の勝率計算
+df_jockey = pd.read_sql_query("""
+    SELECT jockey_name, 
+           COUNT(*) as rides,
+           SUM(CASE WHEN kakutei_jyuni = 1 THEN 1 ELSE 0 END) as wins,
+           ROUND(100.0 * SUM(CASE WHEN kakutei_jyuni = 1 THEN 1 ELSE 0 END) / COUNT(*), 1) as win_rate
+    FROM results
+    WHERE kakutei_jyuni > 0
+    GROUP BY jockey_name
+    HAVING rides >= 100
+    ORDER BY win_rate DESC
+""", conn)
 ```
+
+### 3. リアルタイムオッズ監視
+```python
+# レース直前のオッズ変動を取得
+from jravan.client import JVLinkClient
+manager.get_realtime_data(JVLinkClient.REALTIME_SPEC['ODDS_WIN_PLACE'])
+```
+
+## ⚠️ 初回実行時の注意
+
+1. **JV-Linkセットアップ画面**が表示されます
+2. **JRA-VANサービスキー**を入力してください
+3. **データ保存先フォルダ**を指定してください（デフォルト推奨）
+4. **レジストリ設定**は自動的に現在のパスで生成されます
+
+## 🔧 トラブルシューティング
+
+問題が発生した場合は [SETUP_GUIDE.md](SETUP_GUIDE.md) を参照してください。
+
+### よくある質問
+
+**Q: セットアップは毎回必要？**  
+A: いいえ、初回のみです。
+
+**Q: JRA-VANの契約は必須？**  
+A: はい、月額2,090円の契約が必要です。[JRA-VAN公式サイト](https://jra-van.jp/)
+
+**Q: Mac/Linuxで使える？**  
+A: 申し訳ございません。JV-LinkがWindows専用のため対応していません。
+
+## 📈 今後の予定
+
+- [ ] Web API化
+- [ ] 機械学習モデルの統合
+- [ ] レース予測機能
+- [ ] データ可視化ツール
+
+## 🤝 コントリビューション
+
+プルリクエスト歓迎！バグ報告は[Issues](https://github.com/Mega-Gorilla/jra-van-client/issues)へ。
 
 ## 📝 ライセンス
 
 MITライセンス - 詳細は[LICENSE](LICENSE)を参照
 
-ただし、JRA-VAN DataLabの利用には別途契約と利用規約への同意が必要です。
+⚠️ JRA-VAN DataLabの利用には別途契約と利用規約への同意が必要です。
 
-## 🤝 コントリビューション
+## 🙏 謝辞
 
-プルリクエスト歓迎！詳細は[CONTRIBUTING.md](CONTRIBUTING.md)を参照。
-
-## 📚 参考資料
-
-- [JRA-VAN公式サイト](https://jra-van.jp/)
-- [JV-Link仕様書](https://jra-van.jp/dlb/sdv/sdk.html)
-- [詳細実装ガイド](docs/README_JRAVAN.md)
-- [セットアップガイド](docs/JVLINK_SETUP_GUIDE.md)
-
-## ⚠️ 免責事項
-
-- 本パッケージは非公式です
-- JRA-VAN DataLabの契約が別途必要です
-- データの利用は自己責任でお願いします
-
-## 📮 サポート
-
-- Issues: [GitHub Issues](https://github.com/Mega-Gorilla/jra-van-client/issues)
-- Discussion: [GitHub Discussions](https://github.com/Mega-Gorilla/jra-van-client/discussions)
+- JRA-VAN DataLab様 - データ提供
+- pywin32開発者の皆様 - COM接続サポート
 
 ---
 
-**jra-van-client** - JRA-VAN DataLab Python Client
-© 2024 | Built with ❤️ for Japanese Horse Racing Data Analysis
+**JRA-VAN Client** - Built with ❤️ by [Mega-Gorilla](https://github.com/Mega-Gorilla)  
+競馬データ分析を、もっと簡単に。

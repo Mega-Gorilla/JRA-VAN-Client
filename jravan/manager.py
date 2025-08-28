@@ -12,8 +12,8 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 import logging
 
-from jvlink_client import JVLinkClient
-from jvdata_parser import RecordParser, CodeMaster
+from .client import JVLinkClient
+from .parser import RecordParser, CodeMaster
 
 # ロギング設定
 logger = logging.getLogger(__name__)

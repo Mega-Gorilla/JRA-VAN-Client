@@ -6,10 +6,17 @@ echo.
 echo このバッチは管理者権限で実行してください
 echo.
 
-cd /d "D:\Codes\StableFormer\JRA-VAN Data Lab. SDK Ver4.9.0.2\JV-Link"
+cd /d "%~dp0"
+echo 現在のディレクトリ: %CD%
 
 echo JV-Link.exeを登録中...
-JV-Link.exe /regserver
+if exist JV-Link.exe (
+    JV-Link.exe /regserver
+) else (
+    echo エラー: JV-Link.exeが見つかりません
+    echo setupフォルダに JV-Link.exe をコピーしてください
+    exit /b 1
+)
 
 if %errorlevel% == 0 (
     echo.

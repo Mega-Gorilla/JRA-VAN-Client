@@ -13,8 +13,8 @@ import logging
 import sys
 from datetime import datetime
 
-from src.jvdata_manager import JVDataManager
-from src.jvlink_client import JVLinkClient
+from jravan.manager import JVDataManager
+from jravan.client import JVLinkClient
 
 # ロギング設定
 logging.basicConfig(

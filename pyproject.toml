@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jra-van-client"
+version = "1.0.0"
+description = "JRA-VAN DataLab Python Client for 64bit Windows"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Mega-Gorilla"},
+]
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "pywin32>=305",
+]
+
+[project.urls]
+Homepage = "https://github.com/Mega-Gorilla/jra-van-client"
+Repository = "https://github.com/Mega-Gorilla/jra-van-client.git"
+Issues = "https://github.com/Mega-Gorilla/jra-van-client/issues"
+
+[project.scripts]
+jra-van = "main:main"
+
+[project.optional-dependencies]
+analysis = [
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+]
+visualization = [
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+]
+ml = [
+    "scikit-learn>=1.3.0",
+    "xgboost>=2.0.0",
+    "lightgbm>=4.0.0",
+]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.4.0",
+]
+
+[tool.setuptools]
+packages = ["jravan"]
+
+[tool.setuptools.package-data]
+"*" = ["*.bat", "*.reg", "*.exe"]

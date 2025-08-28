@@ -1,12 +1,14 @@
 """
-JRA-VAN DataLab Python Client
+JRA-VAN DataLab Python Client (64bit対応版)
 Based on JRA-VAN SDK Ver4.9.0.2
+
+64bit Python環境では自動的にブリッジモードで動作
 
 Author: StableFormer Project
 Date: 2025-08-28
 """
 
-import win32com.client
+import sys
 import time
 import os
 from typing import Tuple, Optional, Dict, Any
@@ -20,12 +22,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# win32comのインポート（必須）
+try:
+    import win32com.client
+except ImportError:
+    logger.error("win32comがインストールされていません")
+    logger.error("pip install pywin32 を実行してください")
+    raise ImportError("pywin32 is required")
+
 
 class JVLinkClient:
     """JV-Link COMオブジェクトのラッパークラス"""
     
-    # JV-Link CLSID
-    CLSID_JVLINK = "{02AB1774-0C41-11D7-916F-0003479BEB3F}"
+    # JV-Link CLSID (正しいCLSID)
+    CLSID_JVLINK = "{2AB1774D-0C41-11D7-916F-0003479BEB3F}"
     
     # データ種別定数
     DATA_SPEC = {
@@ -118,7 +128,8 @@ class JVLinkClient:
             logger.info(f"JV-Link初期化開始 (SID: {sid})")
             
             # COMオブジェクト作成
-            self.jvlink = win32com.client.Dispatch("JVDTLab.JVLink")
+            if not self.jvlink:
+                self.jvlink = win32com.client.Dispatch("JVDTLab.JVLink")
             
             # JVInit実行
             ret = self.jvlink.JVInit(sid)
