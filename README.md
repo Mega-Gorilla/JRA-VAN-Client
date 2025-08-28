@@ -6,28 +6,37 @@
 
 JRA-VAN DataLabから競馬データを簡単に取得・分析するためのPythonクライアント
 
+## 🚀 Quick Start（5分で始める）
+
+```bash
+# 最短手順（経験者向け）
+git clone https://github.com/Mega-Gorilla/jra-van-client.git
+cd jra-van-client
+pip install .
+# JV-Link.exeをsetup/に配置後
+python setup_windows.py
+jravan --test
+```
+
 ## ✨ 特徴
 
-- 🚀 **ワンクリックセットアップ** - 管理者権限で`install_windows.py`を実行するだけ
+- 🐍 **標準的なPythonパッケージ** - `pip install .`でインストール可能
 - 💻 **64bit完全対応** - 最新のPython環境で動作
-- 🐍 **Pythonic API** - シンプルで使いやすいインターフェース
+- 📦 **Pythonic API** - シンプルで使いやすいインターフェース
 - 📊 **自動データベース構築** - SQLiteで簡単にデータ管理
 - ⚡ **リアルタイムデータ対応** - オッズ・馬体重の速報取得
 
-## 📋 必要要件
-
-- Windows 10/11 (64bit)
-- Python 3.8以上
-- JRA-VAN DataLab契約（月額2,090円）
-- 管理者権限（初回セットアップ時のみ）
-
 ## 🚀 インストール
 
-### 📋 前提条件
+### 📋 システム要件
 
-- Python 3.8以上 ([ダウンロード](https://www.python.org/downloads/))
-- Windows 10/11 (64bit)
-- JRA-VAN DataLab契約（月額2,090円）
+| 項目 | 最小要件 | 推奨 |
+|------|---------|------|
+| OS | Windows 10 (64bit) | Windows 11 |
+| Python | 3.8 | 3.10以上 |
+| メモリ | 4GB | 8GB以上 |
+| ディスク | 10GB | 50GB以上 |
+| 契約 | JRA-VAN DataLab（月額2,090円） | 同左 |
 
 ### 📥 ステップ1: リポジトリの取得
 
@@ -152,17 +161,19 @@ conn.close()
 
 ```
 jra-van-client/
-├── install_windows.py      # Windows用インストーラー
-├── main.py                 # メインプログラム
-├── pyproject.toml          # Pythonパッケージ設定
+├── pyproject.toml         # Pythonパッケージ設定（PEP 517/518準拠）
+├── setup.py               # 後方互換性用セットアップ
+├── setup_windows.py       # Windows固有設定スクリプト
+├── check_python.bat       # Python環境確認バッチ
 ├── jravan/
-│   ├── client.py          # JV-Link COMラッパー
-│   ├── manager.py         # データ管理
-│   └── parser.py          # データ解析
+│   ├── __init__.py       # パッケージ初期化
+│   ├── __main__.py       # CLIエントリーポイント
+│   ├── client.py         # JV-Link COMラッパー
+│   ├── manager.py        # データ管理
+│   └── parser.py         # データ解析
 ├── setup/
 │   ├── DOWNLOAD_JVLINK.md # JV-Link.exeダウンロード手順
-│   ├── create_registry.py  # レジストリ自動生成スクリプト
-│   ├── apply_registry.bat  # レジストリ適用バッチ
+│   ├── create_registry.py # レジストリ自動生成
 │   └── register_jvlink.bat # JV-Link登録バッチ
 └── docs/                   # 詳細ドキュメント
 ```
@@ -201,6 +212,14 @@ df_jockey = pd.read_sql_query("""
 from jravan.client import JVLinkClient
 manager.get_realtime_data(JVLinkClient.REALTIME_SPEC['ODDS_WIN_PLACE'])
 ```
+
+## 📊 データサイズと処理時間の目安
+
+| データ種別 | サイズ | 初回DL時間 | 更新時間 |
+|-----------|--------|-----------|----------|
+| RACE (レース) | 約5GB | 2-3時間 | 10-30分 |
+| YSCH (スケジュール) | 約100MB | 5-10分 | 1-2分 |
+| リアルタイム | - | - | 即時 |
 
 ## ⚠️ 初回実行時の注意
 
