@@ -1,7 +1,7 @@
 # JRA-VAN Client
 
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org)
-[![Windows](https://img.shields.io/badge/platform-Windows%2064bit-lightgrey)](https://www.microsoft.com/windows)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B%20(32bit)-blue)](https://www.python.org)
+[![Windows](https://img.shields.io/badge/platform-Windows-lightgrey)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 JRA-VAN DataLabから競馬データを簡単に取得・分析するためのPythonクライアント
@@ -9,19 +9,19 @@ JRA-VAN DataLabから競馬データを簡単に取得・分析するためのPy
 ## 🚀 Quick Start（5分で始める）
 
 ```bash
-# 最短手順（経験者向け）
+# 最短手順（経験者向け・32bit Python必須）
 git clone https://github.com/Mega-Gorilla/jra-van-client.git
 cd jra-van-client
-pip install .
-# JV-Link.exeをsetup/に配置後
-python setup_windows.py
+# JV-Link.exeインストーラーを実行してDLLを配置
+pip install .  # pywin32も自動インストール
+python setup_windows.py  # 管理者権限で実行
 jravan --test
 ```
 
 ## ✨ 特徴
 
 - 🐍 **標準的なPythonパッケージ** - `pip install .`でインストール可能
-- 💻 **64bit完全対応** - 最新のPython環境で動作
+- 💻 **32bit Python対応** - JVLink COMコンポーネントとの完全互換性
 - 📦 **Pythonic API** - シンプルで使いやすいインターフェース
 - 📊 **自動データベース構築** - SQLiteで簡単にデータ管理
 - ⚡ **リアルタイムデータ対応** - オッズ・馬体重の速報取得
@@ -32,11 +32,14 @@ jravan --test
 
 | 項目 | 最小要件 | 推奨 |
 |------|---------|------|
-| OS | Windows 10 (64bit) | Windows 11 |
-| Python | 3.8 | 3.10以上 |
+| OS | Windows 10 | Windows 11 |
+| Python | 3.8 (32bit) ⚠️ | 3.10以上 (32bit) |
 | メモリ | 4GB | 8GB以上 |
 | ディスク | 10GB | 50GB以上 |
+| JRA-VAN | Data Lab. SDK | 同左 |
 | 契約 | JRA-VAN DataLab（月額2,090円） | 同左 |
+
+⚠️ **重要**: JVLinkは32bit COMコンポーネントのため、**32bit版Python**が必要です
 
 ### 📥 ステップ1: リポジトリの取得
 
@@ -47,45 +50,59 @@ cd jra-van-client
 
 または、[GitHubからZIPダウンロード](https://github.com/Mega-Gorilla/jra-van-client/archive/refs/heads/main.zip)
 
-### 📦 ステップ2: Pythonパッケージのインストール
+### 📦 ステップ2: 32bit Python環境の準備とパッケージインストール
 
-#### 方法A: 標準的なインストール（推奨）
+⚠️ **重要**: JVLinkは32bit COMコンポーネントのため、**必ず32bit版Python**を使用してください。  
+64bit Pythonでは動作しません（エラー: 0x800700c1）。
 
+#### 32bit Pythonの確認方法
 ```bash
-# 仮想環境の作成（推奨）
+# 現在のPythonが32bitか確認
+python -c "import sys; print('32-bit ✓' if sys.maxsize <= 2**32 else '64-bit ✗ 32bit版が必要です')"
+```
+
+#### インストール手順
+
+**既に32bit Pythonがある場合:**
+```bash
+# 32bit Python仮想環境作成
 python -m venv venv
-venv\Scripts\activate  # Windows
+venv\Scripts\activate
 
-# パッケージのインストール
+# パッケージインストール（pywin32も自動インストール）
 pip install .
 ```
 
-#### 方法B: 開発モード
-
+**32bit Pythonがない場合:**
 ```bash
-# 編集可能インストール（開発者向け）
-pip install -e .
-```
+# 1. Python公式サイトから32bit版をダウンロード
+#    https://python.org → Downloads → Windows installer (32-bit)
+#    インストール先例: C:\Python311-32
 
-#### 方法C: Anaconda使用
+# 2. 32bit Pythonで仮想環境作成
+C:\Python311-32\python.exe -m venv venv
+venv\Scripts\activate
 
-```bash
-conda create -n jravan python=3.8
-conda activate jravan
+# 3. パッケージインストール
 pip install .
 ```
 
-### 📂 ステップ3: JV-Link.exeの配置
+### 📂 ステップ3: JV-Linkのインストール
 
-1. [JRA-VAN公式サイト](https://jra-van.jp/dlb/#tab5)からSDKをダウンロード
-2. ZIPを解凍し、`JV-Link.exe`を`setup/`フォルダにコピー
+1. [JRA-VAN公式サイト](https://jra-van.jp/dlb/)からSDKをダウンロード
+2. ZIPファイル内の`JV-Link.exe`（インストーラー）を実行
+3. インストール後、`C:\Windows\SysWOW64\JVDTLAB\JVDTLAB.dll`が配置されることを確認
 
 詳細: [setup/DOWNLOAD_JVLINK.md](setup/DOWNLOAD_JVLINK.md)
 
-### ⚙️ ステップ4: Windows固有設定（管理者権限推奨）
+### ⚙️ ステップ4: Windows固有設定（管理者権限必須）
 
 ```bash
+# 管理者権限でコマンドプロンプトを開いて実行
 python setup_windows.py
+
+# または、バッチファイルを管理者権限で実行
+setup\setup_registry_32bit.bat
 ```
 
 ### ✅ ステップ5: 動作確認
@@ -172,9 +189,12 @@ jra-van-client/
 │   ├── manager.py        # データ管理
 │   └── parser.py         # データ解析
 ├── setup/
-│   ├── DOWNLOAD_JVLINK.md # JV-Link.exeダウンロード手順
-│   ├── create_registry.py # レジストリ自動生成
-│   └── register_jvlink.bat # JV-Link登録バッチ
+│   ├── DOWNLOAD_JVLINK.md # JV-Linkインストール手順
+│   ├── setup_registry_32bit.bat # 32bit用レジストリ設定
+├── tests/                  # テストスクリプト
+│   ├── __init__.py
+│   ├── README.md
+│   └── test_32bit_jvlink.py
 └── docs/                   # 詳細ドキュメント
 ```
 
@@ -230,7 +250,6 @@ manager.get_realtime_data(JVLinkClient.REALTIME_SPEC['ODDS_WIN_PLACE'])
 
 ## 🔧 トラブルシューティング
 
-問題が発生した場合は [SETUP_GUIDE.md](SETUP_GUIDE.md) を参照してください。
 
 ### よくある質問
 
@@ -241,7 +260,7 @@ A: いいえ、初回のみです。
 A: はい、月額2,090円の契約が必要です。[JRA-VAN公式サイト](https://jra-van.jp/)
 
 **Q: Mac/Linuxで使える？**  
-A: 申し訳ございません。JV-LinkがWindows専用のため対応していません。
+A: JV-LinkがWindows専用のため対応していません。
 
 ## 🆕 最新の改善内容 (2025年8月)
 

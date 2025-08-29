@@ -214,17 +214,17 @@ class JVDataManager:
             )
         """)
         
-            # インデックス作成
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_race_date ON races(year, monthday)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_race_jyo ON races(jyo_code)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_ketto ON results(ketto_num)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_jockey ON results(jockey_code)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_trainer ON results(trainer_code)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_horse_father ON horses(father)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_horse_mother ON horses(mother)")
-            
-            conn.commit()
-            logger.info("データベース初期化完了")
+        # インデックス作成
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_race_date ON races(year, monthday)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_race_jyo ON races(jyo_code)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_ketto ON results(ketto_num)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_jockey ON results(jockey_code)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_result_trainer ON results(trainer_code)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_horse_father ON horses(father)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_horse_mother ON horses(mother)")
+        
+        conn.commit()
+        logger.info("データベース初期化完了")
     
     def __enter__(self):
         """コンテキストマネージャー: エントリー"""

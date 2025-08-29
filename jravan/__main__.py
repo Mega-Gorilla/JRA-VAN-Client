@@ -97,12 +97,12 @@ def main():
         ret = client.initialize("TEST")
         
         if ret == 0:
-            print("✅ 接続成功！")
+            print("[OK] 接続成功！")
             print(f"JV-Linkバージョン: {client.get_version()}")
         else:
-            print(f"❌ 接続エラー: {client.get_error_message(ret)}")
+            print(f"[ERROR] 接続エラー: {client.get_error_message(ret)}")
             if ret == -211:
-                print("→ JRA-VANサービスキーの設定が必要です")
+                print("  -> JRA-VANサービスキーの設定が必要です")
         
         client.close()
         return 0 if ret == 0 else 1

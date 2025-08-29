@@ -1,5 +1,5 @@
 # JRA-VAN DataLab Python Client Requirements
-# Python 3.8+ (64bit)
+# Python 3.8+ (32bit required for JVLink COM)
 
 # Core Requirements
 # -----------------

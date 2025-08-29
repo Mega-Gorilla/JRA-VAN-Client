@@ -1,118 +1,142 @@
-# JV-Link.exe ダウンロード手順
+# JV-Link インストール手順
 
-**最終更新: 2025年8月28日**
+**最終更新: 2025年8月29日**
 
-## ⚠️ 重要：JV-Link.exeが必要です
+## ⚠️ 重要：JV-Link.exeのインストールが必要です
 
-JRA-VAN Clientを利用するためには、JRA-VAN公式サイトから`JV-Link.exe`をダウンロードして、このフォルダに配置する必要があります。
+JRA-VAN Clientを利用するためには、JRA-VAN公式サイトから**JV-Link.exe**（インストーラー）をダウンロード・実行する必要があります。
 
-### なぜJV-Link.exeが含まれていないのか？
-JV-Link.exeはJRA-VANの著作物であり、再配布が許可されていないため、利用者各自でダウンロードしていただく必要があります。
+### なぜJV-Link.exeが必要なのか？
+JV-Link.exeはインストーラーで、実行するとJVLink COMコンポーネント（JVDTLAB.dll）がシステムに配置され、競馬データへのアクセスが可能になります。
 
-## 📥 ダウンロード手順
+## 📥 インストール手順
 
 ### ステップ1: JRA-VAN公式サイトにアクセス
-   - 🔗 [https://jra-van.jp/dlb/#tab5](https://jra-van.jp/dlb/#tab5) を開く
-   - ※会員登録（無料）が必要な場合があります
+   - 🔗 [https://jra-van.jp/dlb/](https://jra-van.jp/dlb/) を開く
+   - JRA-VAN DataLab会員登録が必要です（月額2,090円）
 
-### ステップ2: SDKをダウンロード
-   - 「ソフトウェア開発キット（SDK）」タブをクリック
-   - 最新版の「JRA-VAN Data Lab. SDK」をダウンロード
+### ステップ2: JV-Link SDKをダウンロード
+   - ログイン後、「ソフトウェア開発キット（SDK）」セクションへ
+   - 「JRA-VAN Data Lab. SDK」をダウンロード
    - ファイル名例: `JVLinkSDK_Ver4.9.0.2.zip`
 
-### ステップ3: JV-Link.exeを抽出
+### ステップ3: JV-Link.exeを抽出してインストール
    ```
    ダウンロードしたZIPファイル
    └── JV-Link/
-       ├── JV-Link.exe     ← これが必要！
+       ├── JV-Link.exe     ← このインストーラーを実行！
        ├── JV-Link.pdf     （マニュアル）
        └── その他のファイル
    ```
+   - ZIPファイルを展開
+   - **JV-Link.exe**を実行（管理者権限推奨）
+   - インストーラーの指示に従ってインストール
+   - インストール完了後、以下のDLLが自動的に配置されます：
+     - `C:\Windows\SysWOW64\JVDTLAB\JVDTLAB.dll`
 
-### ステップ4: このフォルダにコピー
-   - 抽出した`JV-Link.exe`を**このフォルダ（setup/）**にコピー
-   - 最終的な配置場所: `setup/JV-Link.exe`
+### ステップ4: サービスキーの設定
+   - 初回起動時にJRA-VANサービスキーの入力が求められます
+   - 会員ページからサービスキーを取得して入力してください
 
 ## ✅ 確認方法
 
-### Windowsコマンドプロンプトで確認
+### DLLの存在確認（コマンドプロンプト）
 ```bash
-cd setup
-dir JV-Link.exe
+dir C:\Windows\SysWOW64\JVDTLAB\JVDTLAB.dll
 ```
 
 ### PowerShellで確認
 ```powershell
-Test-Path ".\setup\JV-Link.exe"
-# True が表示されれば配置成功
+Test-Path "C:\Windows\SysWOW64\JVDTLAB\JVDTLAB.dll"
+# True が表示されればインストール成功
 ```
 
-### Pythonで確認
+### Pythonで確認（32bit Python必須）
 ```python
+import sys
 import os
-if os.path.exists("setup/JV-Link.exe"):
-    print("✅ JV-Link.exe が正しく配置されています")
+
+# Python環境確認
+is_32bit = sys.maxsize <= 2**32
+print(f"Python: {'32-bit [OK]' if is_32bit else '64-bit [ERROR]'}")
+
+# DLL存在確認
+dll_path = r"C:\Windows\SysWOW64\JVDTLAB\JVDTLAB.dll"
+if os.path.exists(dll_path):
+    print("✅ JVDTLAB.dll が正しくインストールされています")
 else:
-    print("❌ JV-Link.exe が見つかりません")
+    print("❌ JVDTLAB.dll が見つかりません")
 ```
 
 ## 📝 注意事項
 
 ### 法的注意
-- ⚖️ JV-Link.exeはJRA-VANの著作物のため、再配布は禁止されています
+- ⚖️ JV-Link.exeはJRA-VANの著作物です
 - 📥 必ず公式サイトから正規版をダウンロードしてください
-- 🔄 SDKのバージョンが更新された場合は、JV-Link.exeも更新してください
+- 💰 利用には月額2,090円の契約が必要です
+- 🚫 JV-Link.exeの再配布は禁止されています
 
 ### 技術的注意
-- 🖥️ JV-Link.exeは32bitアプリケーションです
-- ✅ 本クライアントは64bit Python環境でも動作します（DLL Surrogate機能を使用）
-- 🔧 初回実行時にレジストリへの登録が必要です（自動化済み）
+- 📦 JV-Link.exeはインストーラーです（実行ファイルではありません）
+- 🖥️ JVLinkは32bit COMコンポーネントです
+- ⚠️ **重要**: 32bit版Pythonが必須です（64bit Pythonでは動作しません）
+- 🔧 インストール後もレジストリへの追加設定が必要です（setup_windows.pyで自動化）
 
 ## ❓ よくある質問とトラブルシューティング
 
-### Q: ダウンロードリンクが見つからない
-**A:** JRA-VANの会員登録（無料）が必要です。[こちら](https://jra-van.jp/)から登録してください。
+### Q: インストーラーが見つからない
+**A:** JRA-VAN DataLab会員登録（月額2,090円）が必要です。[こちら](https://jra-van.jp/)から登録してください。
 
-### Q: どのバージョンをダウンロードすべき？
-**A:** 最新版を推奨します（2025年8月現在: Ver4.9.0.2以降）
+### Q: 64bit Pythonで動作しない
+**A:** JVLinkは32bit COMコンポーネントのため、**32bit版Python**が必須です。
+- [Python公式サイト](https://python.org/downloads/windows/)から「Windows installer (32-bit)」をダウンロード
+- インストール先例: `C:\Python311-32`
 
-### Q: ウイルス対策ソフトが警告を出す
-**A:** JV-Link.exeはCOMコンポーネントのため、一部のウイルス対策ソフトが警告することがあります。JRA-VAN公式サイトからダウンロードした正規版であれば安全です。
+### Q: COMエラー（0x800700c1）が発生する
+**A:** 64bit Pythonを使用している可能性があります。以下で確認してください：
+```python
+import sys
+print("32-bit" if sys.maxsize <= 2**32 else "64-bit")
+```
 
-### Q: ダウンロードしたファイルが破損している？
-**A:** ファイルサイズを確認してください。JV-Link.exe は約600KB程度です。
+### Q: レジストリ登録が失敗する
+**A:** 管理者権限でコマンドプロンプトを開いて`setup_windows.py`を実行してください。
 
-### Q: 管理者権限は必要？
-**A:** 初回のレジストリ登録時のみ管理者権限が必要です。通常の実行には不要です。
+### Q: JVInitが-301エラーを返す
+**A:** サービスキーが未設定です。初回実行時に表示される設定画面で入力してください。
 
 ## 🚀 次のステップ
 
-JV-Link.exeの配置が完了したら：
+JV-Link.exeのインストールが完了したら：
 
-### 1. プロジェクトルートに戻る
+### 1. 32bit Python環境の準備
 ```bash
-cd ..
+# 32bit Pythonがインストール済みか確認
+python -c "import sys; print('32-bit' if sys.maxsize <= 2**32 else '64-bit [ERROR: 32-bit Python required]')"
+
+# 32bit Python仮想環境作成（例: C:\Python311-32を使用）
+C:\Python311-32\python.exe -m venv venv_32bit
+venv_32bit\Scripts\activate
 ```
 
-### 2. Pythonパッケージのインストール（未実行の場合）
+### 2. Pythonパッケージのインストール
 ```bash
-# 仮想環境作成（推奨）
-python -m venv venv
-venv\Scripts\activate
-
-# パッケージインストール
-pip install .
+# パッケージインストール（32bit環境で実行）
+pip install .  # pywin32も自動的にインストールされます
 ```
 
 ### 3. Windows固有設定の実行
 ```bash
-# COM登録とレジストリ設定（管理者権限推奨）
+# DLL登録とレジストリ設定（管理者権限推奨）
 python setup_windows.py
 ```
 
 ### 4. 動作確認
 ```bash
 # 接続テスト
+python test_32bit_jvlink.py
+
+# CLIツールのテスト
 jravan --test
 
 # または
