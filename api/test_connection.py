@@ -70,19 +70,21 @@ def test_api_server():
     try:
         import requests
         
-        # ヘルスチェック
-        response = requests.get("http://localhost:8000/health")
-        if response.status_code == 200:
-            data = response.json()
-            print("[OK] APIサーバー稼働中")
-            print(f"   JVLink接続: {data.get('jvlink_connected')}")
-            print(f"   Redisキャッシュ: {data.get('cache_redis_available')}")
-        else:
-            print(f"[ERROR] APIサーバーエラー: {response.status_code}")
+        try:
+            # ヘルスチェック
+            response = requests.get("http://localhost:8000/health")
+            if response.status_code == 200:
+                data = response.json()
+                print("[OK] APIサーバー稼働中")
+                print(f"   JVLink接続: {data.get('jvlink_connected')}")
+                print(f"   Redisキャッシュ: {data.get('cache_redis_available')}")
+            else:
+                print(f"[ERROR] APIサーバーエラー: {response.status_code}")
+                
+        except requests.exceptions.ConnectionError:
+            print("[ERROR] APIサーバーに接続できません")
+            print("   uvicorn api.main:app --reload で起動してください")
             
-    except requests.exceptions.ConnectionError:
-        print("[ERROR] APIサーバーに接続できません")
-        print("   uvicorn api.main:app --reload で起動してください")
     except ImportError:
         print("[WARNING] requestsがインストールされていません")
         print("   pip install requests でインストールしてください")

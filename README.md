@@ -1,39 +1,47 @@
-# JRA-VAN Client
+# JRA-VAN REST API Server
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B%20(32bit)-blue)](https://www.python.org)
 [![Windows](https://img.shields.io/badge/platform-Windows-lightgrey)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-JRA-VAN DataLabから競馬データを簡単に取得・分析するためのPythonクライアント
+JRA-VAN DataLabのデータをREST API経由で提供する高性能サーバー
 
-## 🚀 Quick Start（5分で始める）
+## 🎯 特徴
 
-```bash
-# 最短手順（経験者向け・32bit Python必須）
-git clone https://github.com/Mega-Gorilla/jra-van-client.git
-cd jra-van-client
-# JV-Link.exeインストーラーを実行してDLLを配置
-pip install .  # pywin32も自動インストール
-python setup_windows.py  # 管理者権限で実行
-jravan --test
+- 🚀 **REST API サーバー** - FastAPIによる高性能HTTPインターフェース
+- 💾 **2層キャッシュシステム** - メモリ + Redis による高速レスポンス
+- 🔄 **64bit互換** - 32bit JVLinkを64bitアプリから利用可能
+- ⚡ **リアルタイムデータ対応** - オッズ・馬体重の速報取得
+- 📊 **JSON形式** - 扱いやすいデータフォーマット
+
+## 🏗️ アーキテクチャ
+
+```
+┌─────────────────────┐
+│  64-bit Application │  Python, Node.js, .NET etc.
+└──────────┬──────────┘
+           │ HTTP/REST
+┌──────────▼──────────┐
+│   REST API Server   │  32-bit Python + FastAPI
+│  ┌───────────────┐  │
+│  │  Memory Cache │  │  TTLCache (L1)
+│  └───────┬───────┘  │
+│  ┌───────▼───────┐  │
+│  │  Redis Cache  │  │  Optional (L2)
+│  └───────┬───────┘  │
+└──────────┬──────────┘
+           │ COM
+┌──────────▼──────────┐
+│      JVLink COM     │  32-bit Only
+└─────────────────────┘
 ```
 
-## ✨ 特徴
-
-- 🐍 **標準的なPythonパッケージ** - `pip install .`でインストール可能
-- 💻 **32bit Python対応** - JVLink COMコンポーネントとの完全互換性
-- 📦 **Pythonic API** - シンプルで使いやすいインターフェース
-- 📊 **自動データベース構築** - SQLiteで簡単にデータ管理
-- ⚡ **リアルタイムデータ対応** - オッズ・馬体重の速報取得
-
-## 🚀 インストール
-
-### 📋 システム要件
+## 📋 システム要件
 
 | 項目 | 最小要件 | 推奨 |
 |------|---------|------|
 | OS | Windows 10 | Windows 11 |
-| Python | 3.8 (32bit) ⚠️ | 3.10以上 (32bit) |
+| Python | 3.8 (32bit) ⚠️ | 3.11以上 (32bit) |
 | メモリ | 4GB | 8GB以上 |
 | ディスク | 10GB | 50GB以上 |
 | JRA-VAN | Data Lab. SDK | 同左 |
@@ -41,238 +49,251 @@ jravan --test
 
 ⚠️ **重要**: JVLinkは32bit COMコンポーネントのため、**32bit版Python**が必要です
 
-### 📥 ステップ1: リポジトリの取得
+## 🚀 インストール
+
+### 1. リポジトリの取得
 
 ```bash
 git clone https://github.com/Mega-Gorilla/jra-van-client.git
 cd jra-van-client
 ```
 
-または、[GitHubからZIPダウンロード](https://github.com/Mega-Gorilla/jra-van-client/archive/refs/heads/main.zip)
+### 2. 32bit Python環境の準備
 
-### 📦 ステップ2: 32bit Python環境の準備とパッケージインストール
-
-⚠️ **重要**: JVLinkは32bit COMコンポーネントのため、**必ず32bit版Python**を使用してください。  
-64bit Pythonでは動作しません（エラー: 0x800700c1）。
-
-#### 32bit Pythonの確認方法
 ```bash
-# 現在のPythonが32bitか確認
-python -c "import sys; print('32-bit ✓' if sys.maxsize <= 2**32 else '64-bit ✗ 32bit版が必要です')"
+# 32bit Pythonか確認
+python -c "import sys; print('32-bit OK' if sys.maxsize <= 2**32 else '64-bit ERROR: 32bit版が必要')"
+
+# 仮想環境作成
+python -m venv .venv
+.venv\Scripts\activate
+
+# 依存関係インストール
+pip install -r api/requirements.txt
 ```
 
-#### インストール手順
-
-**既に32bit Pythonがある場合:**
-```bash
-# 32bit Python仮想環境作成
-python -m venv venv
-venv\Scripts\activate
-
-# パッケージインストール（pywin32も自動インストール）
-pip install .
-```
-
-**32bit Pythonがない場合:**
-```bash
-# 1. Python公式サイトから32bit版をダウンロード
-#    https://python.org → Downloads → Windows installer (32-bit)
-#    インストール先例: C:\Python311-32
-
-# 2. 32bit Pythonで仮想環境作成
-C:\Python311-32\python.exe -m venv venv
-venv\Scripts\activate
-
-# 3. パッケージインストール
-pip install .
-```
-
-### 📂 ステップ3: JV-Linkのインストール
+### 3. JV-Linkのインストール
 
 1. [JRA-VAN公式サイト](https://jra-van.jp/dlb/)からSDKをダウンロード
-2. ZIPファイル内の`JV-Link.exe`（インストーラー）を実行
-3. インストール後、`C:\Windows\SysWOW64\JVDTLAB\JVDTLAB.dll`が配置されることを確認
+2. SDK内の`JV-Link.exe`インストーラーを実行
+3. `C:\Windows\SysWOW64\JVDTLAB\JVDTLAB.dll`が配置されることを確認
 
-詳細: [setup/DOWNLOAD_JVLINK.md](setup/DOWNLOAD_JVLINK.md)
+※ SDKはこのリポジトリの`JRA-VAN Data Lab. SDK Ver4.9.0.2\JV-Link\JV-Link.exe`にも含まれています
 
-### ⚙️ ステップ4: Windows固有設定（管理者権限必須）
-
-```bash
-# 管理者権限でコマンドプロンプトを開いて実行
-python setup_windows.py
-
-# または、バッチファイルを管理者権限で実行
-setup\setup_registry_32bit.bat
-```
-
-### ✅ ステップ5: 動作確認
+### 4. 接続テスト
 
 ```bash
-# インストール後はjravanコマンドが使用可能
-jravan --test
-
-# または直接実行
-python -m jravan --test
+# JVLink接続確認
+.venv\Scripts\python.exe api\test_connection.py
 ```
 
-## 💻 基本的な使い方
+## 🎮 REST APIサーバーの起動
 
-### コマンドライン（pip install後）
+### 開発サーバー
 
 ```bash
-# 接続テスト
-jravan --test
+# 仮想環境を有効化
+.venv\Scripts\activate
 
-# 初回データ取得（セットアップ）
-jravan --setup
-
-# データ更新（毎週実行推奨）
-jravan --update
-
-# 統計情報表示
-jravan --stats
-
-# ヘルプ
-jravan --help
+# サーバー起動（自動リロード付き）
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Python API（推奨：コンテキストマネージャー使用）
+### 本番サーバー
+
+```bash
+# 仮想環境を有効化
+.venv\Scripts\activate
+
+# 本番サーバー起動
+uvicorn api.main:app --host 0.0.0.0 --port 8000 --workers 1
+```
+
+⚠️ **注意**: JVLink COMの制約により、ワーカー数は1に制限されます
+
+## 📡 API エンドポイント
+
+### ヘルスチェック
+
+```bash
+GET http://localhost:8000/health
+```
+
+レスポンス例：
+```json
+{
+  "status": "healthy",
+  "jvlink_connected": true,
+  "cache_memory_size": 42,
+  "cache_redis_available": false,
+  "timestamp": "2025-08-29T10:30:00"
+}
+```
+
+### データ取得
+
+```bash
+GET http://localhost:8000/api/v1/data/{dataspec}
+```
+
+パラメータ：
+- `dataspec` (必須): データ種別コード（例: "RACE", "0B12", "HOYU"）
+- `from_time` (オプション): 取得開始日時（YYYYMMDDHHmmSS形式）
+- `option` (オプション): 取得オプション（1: 通常, 2: 今週, 3: リアルタイム）
+
+#### 使用例
+
+```bash
+# レースデータ取得
+curl "http://localhost:8000/api/v1/data/RACE?from_time=20250101000000"
+
+# リアルタイムオッズ取得
+curl "http://localhost:8000/api/v1/data/0B12?option=3"
+
+# 馬主マスタ取得
+curl "http://localhost:8000/api/v1/data/HOYU"
+```
+
+## 💻 クライアント実装例
+
+### Python (requests)
 
 ```python
-from jravan.manager import JVDataManager
+import requests
 
-# コンテキストマネージャーで安全にリソース管理
-with JVDataManager("jravan.db") as manager:
-    # レースデータ取得
-    manager.download_setup_data("RACE")  # 初回
-    manager.update_data()                # 更新
-# 自動的にリソースがクリーンアップされる
+# APIサーバーのURL
+API_BASE = "http://localhost:8000"
 
-# SQLiteデータベースから分析
-import sqlite3
-import pandas as pd
+# ヘルスチェック
+response = requests.get(f"{API_BASE}/health")
+print(response.json())
 
-conn = sqlite3.connect("jravan.db")
-df = pd.read_sql_query("""
-    SELECT * FROM races 
-    WHERE year = '2025' 
-    AND jyo_name LIKE '%東京%'
-""", conn)
-conn.close()
+# レースデータ取得
+response = requests.get(f"{API_BASE}/api/v1/data/RACE", params={
+    "from_time": "20250101000000",
+    "option": 1
+})
+data = response.json()
+print(f"取得件数: {data['count']}, キャッシュ: {data['cached']}")
+```
+
+### JavaScript (fetch)
+
+```javascript
+// ヘルスチェック
+fetch('http://localhost:8000/health')
+  .then(res => res.json())
+  .then(data => console.log(data));
+
+// レースデータ取得
+fetch('http://localhost:8000/api/v1/data/RACE?from_time=20250101000000')
+  .then(res => res.json())
+  .then(data => {
+    console.log(`Records: ${data.count}, Cached: ${data.cached}`);
+    data.data.forEach(record => {
+      console.log(record.record_type, record.data);
+    });
+  });
+```
+
+### C# (.NET)
+
+```csharp
+using System.Net.Http;
+using System.Text.Json;
+
+var client = new HttpClient();
+
+// ヘルスチェック
+var response = await client.GetAsync("http://localhost:8000/health");
+var json = await response.Content.ReadAsStringAsync();
+Console.WriteLine(json);
+
+// レースデータ取得
+response = await client.GetAsync("http://localhost:8000/api/v1/data/RACE?from_time=20250101000000");
+json = await response.Content.ReadAsStringAsync();
+var data = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+Console.WriteLine($"Records: {data["count"]}");
+```
+
+## ⚡ パフォーマンス最適化
+
+### キャッシュ戦略
+
+| データ種別 | TTL | 説明 |
+|-----------|-----|------|
+| リアルタイム (0B*) | 60秒 | オッズ、馬体重など |
+| マスタデータ | 24時間 | 馬主、調教師など |
+| その他 | 10分 | レース、成績など |
+
+### Redis導入（オプション）
+
+分散キャッシュによる更なる高速化：
+
+```bash
+# Redis起動（Docker）
+docker run -d -p 6379:6379 redis:alpine
+
+# Redisが利用可能な場合、自動的に2層キャッシュが有効化
 ```
 
 ## 📊 取得可能なデータ
 
 ### 基本データ
-- 📅 **レース情報** - 開催日、距離、馬場状態など
-- 🏇 **出走馬情報** - 馬名、騎手、調教師、過去成績
-- 🧬 **血統データ** - 父馬、母馬、母父馬
-- 📈 **年間スケジュール** - 開催予定、重賞レース日程
+- **RACE** - レース詳細情報
+- **HOSE** - 競走馬マスタ  
+- **HOYU** - 馬主マスタ
+- **YSCH** - 開催スケジュール
 
 ### リアルタイムデータ
-- 💰 **オッズ** - 単勝、複勝、馬連、3連単など
-- ⚖️ **馬体重** - 当日計量結果
-- 🏁 **速報結果** - 確定順位、タイム
+- **0B12** - 単勝・複勝オッズ
+- **0B15** - 馬連オッズ
+- **0B20** - 馬単オッズ
+- **0B30** - 3連複オッズ
+- **0B31** - 3連単オッズ
+- **0B11** - 馬体重
+
+詳細は [docs/specifications/](docs/specifications/) を参照
 
 ## 📁 プロジェクト構成
 
 ```
 jra-van-client/
-├── pyproject.toml         # Pythonパッケージ設定（PEP 517/518準拠）
-├── setup.py               # 後方互換性用セットアップ
-├── setup_windows.py       # Windows固有設定スクリプト
-├── check_python.bat       # Python環境確認バッチ
-├── jravan/
-│   ├── __init__.py       # パッケージ初期化
-│   ├── __main__.py       # CLIエントリーポイント
-│   ├── client.py         # JV-Link COMラッパー
-│   ├── manager.py        # データ管理
-│   └── parser.py         # データ解析
-├── setup/
-│   ├── DOWNLOAD_JVLINK.md # JV-Linkインストール手順
-│   ├── setup_registry_32bit.bat # 32bit用レジストリ設定
-├── tests/                  # テストスクリプト
-│   ├── __init__.py
-│   ├── README.md
-│   └── test_32bit_jvlink.py
-└── docs/                   # 詳細ドキュメント
+├── api/
+│   ├── main.py            # FastAPI サーバー
+│   ├── cache.py           # 2層キャッシュ実装
+│   ├── test_connection.py # 接続テスト
+│   └── requirements.txt   # 依存関係
+├── docs/
+│   ├── api-design/        # API設計書
+│   └── specifications/    # データ仕様書
+├── JRA-VAN Data Lab. SDK Ver4.9.0.2/
+│   └── JV-Link/
+│       └── JV-Link.exe    # JVLinkインストーラー
+└── README.md
 ```
-
-## 🎯 活用例
-
-### 1. 過去レースの分析
-```python
-# 重賞レースの結果を取得
-df_grade = pd.read_sql_query("""
-    SELECT * FROM races 
-    WHERE grade_cd IN ('1', '2', '3')  -- G1, G2, G3
-    ORDER BY year DESC, monthday DESC
-""", conn)
-```
-
-### 2. 騎手成績の集計
-```python
-# 騎手別の勝率計算
-df_jockey = pd.read_sql_query("""
-    SELECT jockey_name, 
-           COUNT(*) as rides,
-           SUM(CASE WHEN kakutei_jyuni = 1 THEN 1 ELSE 0 END) as wins,
-           ROUND(100.0 * SUM(CASE WHEN kakutei_jyuni = 1 THEN 1 ELSE 0 END) / COUNT(*), 1) as win_rate
-    FROM results
-    WHERE kakutei_jyuni > 0
-    GROUP BY jockey_name
-    HAVING rides >= 100
-    ORDER BY win_rate DESC
-""", conn)
-```
-
-### 3. リアルタイムオッズ監視
-```python
-# レース直前のオッズ変動を取得
-from jravan.client import JVLinkClient
-manager.get_realtime_data(JVLinkClient.REALTIME_SPEC['ODDS_WIN_PLACE'])
-```
-
-## 📊 データサイズと処理時間の目安
-
-| データ種別 | サイズ | 初回DL時間 | 更新時間 |
-|-----------|--------|-----------|----------|
-| RACE (レース) | 約5GB | 2-3時間 | 10-30分 |
-| YSCH (スケジュール) | 約100MB | 5-10分 | 1-2分 |
-| リアルタイム | - | - | 即時 |
-
-## ⚠️ 初回実行時の注意
-
-1. **JV-Linkセットアップ画面**が表示されます
-2. **JRA-VANサービスキー**を入力してください
-3. **データ保存先フォルダ**を指定してください（デフォルト推奨）
-4. **レジストリ設定**は自動的に現在のパスで生成されます
 
 ## 🔧 トラブルシューティング
 
+### JVLink接続エラー
 
-### よくある質問
+```
+Error: 0x800700c1 - Not a valid Win32 application
+```
+→ 64bit Pythonを使用している。32bit Pythonに切り替える
 
-**Q: セットアップは毎回必要？**  
-A: いいえ、初回のみです。
+### COMオブジェクト作成失敗
 
-**Q: JRA-VANの契約は必須？**  
-A: はい、月額2,090円の契約が必要です。[JRA-VAN公式サイト](https://jra-van.jp/)
+```
+pywintypes.com_error: (-2147221005, 'Invalid class string', None, None)
+```
+→ JV-Link.exeインストーラーを実行してDLLを配置する
 
-**Q: Mac/Linuxで使える？**  
-A: JV-LinkがWindows専用のため対応していません。
+### キャッシュ関連
 
-## 🆕 最新の改善内容 (2025年8月)
-
-### パフォーマンス最適化
-- **バッチ処理実装**: 大量データ処理時のメモリ効率を改善
-- **WALモード対応**: SQLiteのWrite-Ahead Loggingで並列処理性能向上
-- **接続プール実装**: データベース接続の効率的な管理
-
-### 安全性向上
-- **コンテキストマネージャー実装**: リソースの自動クリーンアップ
-- **具体的な例外処理**: エラー原因の特定が容易に
-- **トランザクション管理強化**: データ整合性の保証
+Redisが利用できない場合：
+- 自動的にメモリキャッシュのみで動作
+- パフォーマンスへの影響は限定的
 
 ## 🤝 コントリビューション
 
@@ -286,7 +307,6 @@ MIT License with Additional Terms - 詳細は[LICENSE](LICENSE)を参照
 - JRA-VANデータの利用には**別途契約**（月額2,090円）が必要です
 - データ利用時は**JRA-VAN利用規約**を遵守してください
 - 本ソフトウェアのライセンスは**データ利用権を付与するものではありません**
-- 詳細は[LICENSE](LICENSE)ファイルの追加条項を参照してください
 
 ## 🙏 謝辞
 
@@ -295,5 +315,5 @@ MIT License with Additional Terms - 詳細は[LICENSE](LICENSE)を参照
 
 ---
 
-**JRA-VAN Client** - Built with ❤️ by [Mega-Gorilla](https://github.com/Mega-Gorilla)  
+**JRA-VAN REST API Server** - Built with ❤️ by [Mega-Gorilla](https://github.com/Mega-Gorilla)  
 競馬データ分析を、もっと簡単に。
