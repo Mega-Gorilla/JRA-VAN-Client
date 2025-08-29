@@ -288,9 +288,13 @@ A: JV-LinkがWindows専用のため対応していません。
 
 ## 📝 ライセンス
 
-MITライセンス - 詳細は[LICENSE](LICENSE)を参照
+MIT License with Additional Terms - 詳細は[LICENSE](LICENSE)を参照
 
-⚠️ JRA-VAN DataLabの利用には別途契約と利用規約への同意が必要です。
+### ⚠️ JRA-VANデータ利用に関する重要事項
+- JRA-VANデータの利用には**別途契約**（月額2,090円）が必要です
+- データ利用時は**JRA-VAN利用規約**を遵守してください
+- 本ソフトウェアのライセンスは**データ利用権を付与するものではありません**
+- 詳細は[LICENSE](LICENSE)ファイルの追加条項を参照してください
 
 ## 🙏 謝辞
 
