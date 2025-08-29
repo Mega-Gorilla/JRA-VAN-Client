@@ -1,0 +1,14 @@
+# REST API最小限の依存関係
+# すべて32-bit Python (3.11+) で動作確認済み
+
+# Core
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pywin32==306  # JVLink COM接続用
+
+# Cache
+cachetools==5.3.2  # メモリキャッシュ
+redis==5.0.1  # オプション: 分散キャッシュ
+
+# Utilities
+python-multipart==0.0.6  # ファイルアップロード対応
